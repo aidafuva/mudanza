@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario de Mudanza</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --ink: #1A1410;
+    --bodega: #2D4A3E;
+    --cuernavaca: #8B3A2A;
+    --accent: #C4A35A;
+    --light-border: rgba(26,20,16,0.12);
+    --card-bg: #FDFAF4;
+    --muted: #7A6E62;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--light-border);
+    padding: 32px 48px 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--cream);
+    z-index: 100;
+  }
+
+  .logo-block h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .logo-block p {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap input {
+    background: white;
+    border: 1px solid var(--light-border);
+    border-radius: 6px;
+    padding: 8px 12px 8px 36px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-wrap input:focus { border-color: var(--accent); }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.8; }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--light-border);
+    padding: 0 48px;
+  }
+
+  .stat {
+    padding: 16px 32px 16px 0;
+    margin-right: 32px;
+    border-right: 1px solid var(--light-border);
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .stat-num.bodega { color: var(--bodega); }
+  .stat-num.cuernavaca { color: var(--cuernavaca); }
+
+  /* FILTERS */
+  .filters {
+    padding: 20px 48px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+
+  .filter-btn {
+    border: 1px solid var(--light-border);
+    background: white;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--ink);
+    color: var(--cream);
+    border-color: var(--ink);
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 8px 48px 48px;
+  }
+
+  /* CARD */
+  .box-card {
+    background: var(--card-bg);
+    border: 1px solid var(--light-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .box-card:hover {
+    box-shadow: 0 8px 32px rgba(26,20,16,0.1);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    padding: 20px 20px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--light-border);
+  }
+
+  .box-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .box-meta { text-align: right; }
+
+  .dest-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .dest-badge.bodega { background: #E8F0EC; color: var(--bodega); }
+  .dest-badge.cuernavaca { background: #F5EAE7; color: var(--cuernavaca); }
+
+  .cat-tag {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .card-body { padding: 16px 20px; }
+
+  .item-list {
+    list-style: none;
+    min-height: 60px;
+  }
+
+  .item-list li {
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--light-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--ink);
+  }
+
+  .item-list li:last-child { border-bottom: none; }
+
+  .item-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 0 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .item-list li:hover .item-del { opacity: 1; }
+
+  .empty-msg {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  .card-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--light-border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .add-item-input {
+    flex: 1;
+    border: 1px solid var(--light-border);
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .add-item-input:focus { border-color: var(--accent); }
+
+  .btn-small {
+    border: 1px solid var(--light-border);
+    background: white;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-small:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+  .btn-qr {
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: white;
+  }
+  .btn-qr:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .card-actions {
+    padding: 0 20px 16px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-edit { font-size: 11px; color: var(--muted); }
+  .btn-delete-card { font-size: 11px; color: #c0392b; border-color: #c0392b; }
+  .btn-delete-card:hover { background: #c0392b; color: white; }
+
+  /* SEARCH RESULTS */
+  .search-results {
+    padding: 20px 48px;
+    background: white;
+    border-bottom: 1px solid var(--light-border);
+  }
+  .search-results h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .search-result-item {
+    padding: 8px 12px;
+    background: var(--cream);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .search-result-box {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,20,16,0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal {
+    background: var(--card-bg);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 460px;
+    padding: 32px;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+  }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    background: none; border: none;
+    font-size: 20px; cursor: pointer;
+    color: var(--muted);
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    border: 1px solid var(--light-border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+
+  .dest-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .dest-btn {
+    border: 2px solid var(--light-border);
+    background: white;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .dest-btn .dest-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+  .dest-btn .dest-name { font-size: 13px; font-weight: 500; }
+  .dest-btn .dest-desc { font-size: 11px; color: var(--muted); }
+
+  .dest-btn.selected-bodega {
+    border-color: var(--bodega);
+    background: #E8F0EC;
+    color: var(--bodega);
+  }
+  .dest-btn.selected-cuernavaca {
+    border-color: var(--cuernavaca);
+    background: #F5EAE7;
+    color: var(--cuernavaca);
+  }
+
+  /* QR MODAL */
+  .qr-modal {
+    text-align: center;
+    max-width: 380px;
+  }
+
+  #qr-container {
+    margin: 20px auto;
+    width: fit-content;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--light-border);
+  }
+
+  .qr-box-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 40px;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+
+  .qr-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .qr-items-preview {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    text-align: left;
+    max-height: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-print {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+  }
+
+  .empty-state h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: var(--muted);
+  }
+
+  .empty-state p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  /* CATEGORY COLORS */
+  .cat-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    .modal-overlay, .modal-overlay * { visibility: visible; }
+    .modal-overlay { position: absolute; inset: 0; background: white; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <h1>Inventario</h1>
+    <p>Sistema de mudanza · Aída</p>
+  </div>
+  <div class="header-actions">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Buscar objeto..." oninput="handleSearch(this.value)">
+    </div>
+    <button class="btn-primary" onclick="openNewBoxModal()">+ Nueva caja</button>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num" id="stat-total">0</div>
+    <div class="stat-label">Cajas totales</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num bodega" id="stat-bodega">0</div>
+    <div class="stat-label">Bodega</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num cuernavaca" id="stat-cvca">0</div>
+    <div class="stat-label">Cuernavaca</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="stat-items">0</div>
+    <div class="stat-label">Objetos registrados</div>
+  </div>
+</div>
+
+<div class="filters" id="filters-bar">
+  <span class="filter-label">Filtrar:</span>
+  <button class="filter-btn active" onclick="setFilter('all', this)">Todas</button>
+  <button class="filter-btn" onclick="setFilter('bodega', this)">🏚 Bodega</button>
+  <button class="filter-btn" onclick="setFilter('cuernavaca', this)">🏡 Cuernavaca</button>
+</div>
+
+<div id="search-results-container" style="display:none"></div>
+
+<div class="grid" id="boxes-grid"></div>
+
+<!-- NEW BOX MODAL -->
+<div class="modal-overlay" id="new-box-modal" style="display:none" onclick="closeModalOnOverlay(event,'new-box-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('new-box-modal')">✕</button>
+    <h2 id="modal-title">Nueva caja</h2>
+    <input type="hidden" id="editing-box-id">
+
+    <div class="form-group">
+      <label>Destino</label>
+      <div class="dest-buttons">
+        <button class="dest-btn" id="btn-bodega" onclick="selectDest('bodega')">
+          <span class="dest-icon">🏚</span>
+          <span class="dest-name">Bodega</span>
+          <span class="dest-desc">Almacenamiento</span>
+        </button>
+        <button class="dest-btn" id="btn-cuernavaca" onclick="selectDest('cuernavaca')">
+          <span class="dest-icon">🏡</span>
+          <span class="dest-name">Cuernavaca</span>
+          <span class="dest-desc">Uso inmediato</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Categoría</label>
+      <input type="text" id="cat-input" list="cat-list" placeholder="Ej: Libros, Ropa, Cocina...">
+      <datalist id="cat-list"></datalist>
+    </div>
+
+    <div class="form-group">
+      <label>Notas (opcional)</label>
+      <input type="text" id="notes-input" placeholder="Ej: Frágil, abrir primero...">
+    </div>
+
+    <button class="btn-primary" style="width:100%; padding: 14px; font-size:15px; margin-top:8px;" onclick="saveBox()">
+      Guardar caja
+    </button>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qr-modal" style="display:none" onclick="closeModalOnOverlay(event,'qr-modal')">
+  <div class="modal qr-modal">
+    <button class="modal-close" onclick="closeModal('qr-modal')">✕</button>
+    <div class="qr-box-title" id="qr-box-num"></div>
+    <div class="qr-subtitle" id="qr-box-dest"></div>
+    <div id="qr-container"></div>
+    <div class="qr-items-preview" id="qr-items-preview"></div>
+    <br>
+    <button class="btn-print" onclick="window.print()">🖨 Imprimir etiqueta</button>
+  </div>
+</div>
+
+<script>
+  // ─── STATE ───────────────────────────────────────────────
+  let boxes = JSON.parse(localStorage.getItem('mudanza_boxes') || '[]');
+  let currentFilter = 'all';
+  let selectedDest = '';
+  let editingId = null;
+
+  // ─── SAVE ─────────────────────────────────────────────────
+  function save() {
+    localStorage.setItem('mudanza_boxes', JSON.stringify(boxes));
+  }
+
+  // ─── STATS ────────────────────────────────────────────────
+  function updateStats() {
+    document.getElementById('stat-total').textContent = boxes.length;
+    document.getElementById('stat-bodega').textContent = boxes.filter(b => b.dest === 'bodega').length;
+    document.getElementById('stat-cvca').textContent = boxes.filter(b => b.dest === 'cuernavaca').length;
+    document.getElementById('stat-items').textContent = boxes.reduce((a,b) => a + b.items.length, 0);
+  }
+
+  // ─── CATEGORY COLORS ─────────────────────────────────────
+  const catColors = {};
+  const palette = ['#C4A35A','#2D4A3E','#8B3A2A','#4A6FA5','#7B5EA7','#2E86AB','#A23B72','#F18F01'];
+  function getCatColor(cat) {
+    if (!catColors[cat]) {
+      const used = Object.keys(catColors).length;
+      catColors[cat] = palette[used % palette.length];
+    }
+    return catColors[cat];
+  }
+
+  // ─── RENDER ───────────────────────────────────────────────
+  function render() {
+    updateStats();
+    updateCatFilter();
+    const grid = document.getElementById('boxes-grid');
+    const filtered = boxes.filter(b => currentFilter === 'all' || b.dest === currentFilter || currentFilter === b.cat);
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state">
+        <h3>Sin cajas aún</h3>
+        <p>Empieza agregando tu primera caja de mudanza.</p>
+        <button class="btn-primary" onclick="openNewBoxModal()">+ Nueva caja</button>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(box => `
+      <div class="box-card" id="card-${box.id}">
+        <div class="card-header">
+          <div class="box-number">#${String(box.num).padStart(2,'0')}</div>
+          <div class="box-meta">
+            <span class="dest-badge ${box.dest}">${box.dest === 'bodega' ? '🏚 Bodega' : '🏡 Cuernavaca'}</span>
+            ${box.cat ? `<span class="cat-tag"><span class="cat-dot" style="background:${getCatColor(box.cat)}"></span>${box.cat}</span>` : ''}
+            ${box.notes ? `<span class="cat-tag" style="color:#999">📝 ${box.notes}</span>` : ''}
+          </div>
+        </div>
+        <div class="card-body">
+          <ul class="item-list" id="list-${box.id}">
+            ${box.items.length === 0 
+              ? `<li class="empty-msg">Sin objetos aún</li>` 
+              : box.items.map((item, i) => `
+                <li>
+                  <span>${item}</span>
+                  <button class="item-del" onclick="deleteItem('${box.id}', ${i})" title="Eliminar">✕</button>
+                </li>`).join('')}
+          </ul>
+        </div>
+        <div class="card-footer">
+          <input class="add-item-input" id="item-input-${box.id}" placeholder="Agregar objeto..." 
+            onkeydown="if(event.key==='Enter') addItem('${box.id}')">
+          <button class="btn-small" onclick="addItem('${box.id}')">+ Agregar</button>
+          <button class="btn-small btn-qr" onclick="showQR('${box.id}')">QR</button>
+        </div>
+        <div class="card-actions">
+          <button class="btn-small btn-edit" onclick="openEditModal('${box.id}')">✏ Editar</button>
+          <button class="btn-small btn-delete-card" onclick="deleteBox('${box.id}')">🗑 Eliminar caja</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ─── FILTER ───────────────────────────────────────────────
+  function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function updateCatFilter() {
+    const bar = document.getElementById('filters-bar');
+    const existing = bar.querySelectorAll('.cat-filter');
+    existing.forEach(e => e.remove());
+
+    const cats = [...new Set(boxes.map(b => b.cat).filter(Boolean))];
+    cats.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn cat-filter';
+      btn.style.borderColor = getCatColor(cat);
+      btn.innerHTML = `<span class="cat-dot" style="background:${getCatColor(cat)}"></span>${cat}`;
+      btn.onclick = () => setFilter(cat, btn);
+      if (currentFilter === cat) btn.classList.add('active');
+      bar.appendChild(btn);
+    });
+  }
+
+  // ─── BOX CRUD ─────────────────────────────────────────────
+  function openNewBoxModal() {
+    editingId = null;
+    selectedDest = '';
+    document.getElementById('modal-title').textContent = 'Nueva caja';
+    document.getElementById('editing-box-id').value = '';
+    document.getElementById('cat-input').value = '';
+    document.getElementById('notes-input').value = '';
+    document.getElementById('btn-bodega').className = 'dest-btn';
+    document.getElementById('btn-cuernavaca').className = 'dest-btn';
+    updateCatDatalist();
+    document.getElementById('new-box-modal').style.display = 'flex';
+  }
+
+  function openEditModal(id) {
+    const box = boxes.find(b => b.id === id);
+    if (!box) return;
+    editingId = id;
+    selectedDest = box.dest;
+    document.getElementById('modal-title').textContent = `Editar caja #${String(box.num).padStart(2,'0')}`;
+    document.getElementById('cat-input').value = box.cat || '';
+    document.getElementById('notes-input').value = box.notes || '';
+    document.getElementById('btn-bodega').className = 'dest-btn' + (box.dest === 'bodega' ? ' selected-bodega' : '');
+    document.getElementById('btn-cuernavaca').className = 'dest-btn' + (box.dest === 'cuernavaca' ? ' selected-cuernavaca' : '');
+    updateCatDatalist();
+    document.getElementById('new-box-modal').style.display = 'flex';
+  }
+
+  function selectDest(dest) {
+    selectedDest = dest;
+    document.getElementById('btn-bodega').className = 'dest-btn' + (dest === 'bodega' ? ' selected-bodega' : '');
+    document.getElementById('btn-cuernavaca').className = 'dest-btn' + (dest === 'cuernavaca' ? ' selected-cuernavaca' : '');
+  }
+
+  function saveBox() {
+    if (!selectedDest) { alert('Elige un destino (Bodega o Cuernavaca)'); return; }
+    const cat = document.getElementById('cat-input').value.trim();
+    const notes = document.getElementById('notes-input').value.trim();
+
+    if (editingId) {
+      const box = boxes.find(b => b.id === editingId);
+      box.dest = selectedDest;
+      box.cat = cat;
+      box.notes = notes;
+    } else {
+      const num = boxes.length > 0 ? Math.max(...boxes.map(b => b.num)) + 1 : 1;
+      boxes.push({ id: crypto.randomUUID(), num, dest: selectedDest, cat, notes, items: [] });
+    }
+
+    save();
+    closeModal('new-box-modal');
+    render();
+  }
+
+  function deleteBox(id) {
+    if (!confirm('¿Eliminar esta caja y todo su contenido?')) return;
+    boxes = boxes.filter(b => b.id !== id);
+    save(); render();
+  }
+
+  // ─── ITEMS ────────────────────────────────────────────────
+  function addItem(boxId) {
+    const input = document.getElementById(`item-input-${boxId}`);
+    const val = input.value.trim();
+    if (!val) return;
+    const box = boxes.find(b => b.id === boxId);
+    box.items.push(val);
+    input.value = '';
+    save(); render();
+    // refocus
+    setTimeout(() => {
+      const el = document.getElementById(`item-input-${boxId}`);
+      if (el) el.focus();
+    }, 50);
+  }
+
+  function deleteItem(boxId, idx) {
+    const box = boxes.find(b => b.id === boxId);
+    box.items.splice(idx, 1);
+    save(); render();
+  }
+
+  // ─── SEARCH ───────────────────────────────────────────────
+  function handleSearch(q) {
+    const container = document.getElementById('search-results-container');
+    if (!q.trim()) { container.style.display = 'none'; container.innerHTML = ''; return; }
+
+    const results = [];
+    boxes.forEach(box => {
+      box.items.forEach(item => {
+        if (item.toLowerCase().includes(q.toLowerCase())) {
+          results.push({ item, box });
+        }
+      });
+    });
+
+    if (results.length === 0) {
+      container.style.display = 'block';
+      container.innerHTML = `<div class="search-results"><h3>Resultados de búsqueda</h3><p style="font-size:13px;color:var(--muted)">No se encontró "${q}"</p></div>`;
+      return;
+    }
+
+    container.style.display = 'block';
+    container.innerHTML = `<div class="search-results">
+      <h3>${results.length} resultado${results.length !== 1 ? 's' : ''} para "${q}"</h3>
+      ${results.map(r => `
+        <div class="search-result-item">
+          <span>${r.item}</span>
+          <span class="search-result-box">
+            Caja #${String(r.box.num).padStart(2,'0')} · 
+            <span class="dest-badge ${r.box.dest}" style="font-size:9px;">${r.box.dest}</span>
+            ${r.box.cat ? `· ${r.box.cat}` : ''}
+          </span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // ─── QR ───────────────────────────────────────────────────
+  function showQR(id) {
+    const box = boxes.find(b => b.id === id);
+    if (!box) return;
+
+    document.getElementById('qr-box-num').textContent = `Caja #${String(box.num).padStart(2,'0')}`;
+    document.getElementById('qr-box-dest').textContent = (box.dest === 'bodega' ? '🏚 Bodega' : '🏡 Cuernavaca') + (box.cat ? ` · ${box.cat}` : '');
+
+    const container = document.getElementById('qr-container');
+    container.innerHTML = '';
+
+    const content = [
+      `CAJA #${String(box.num).padStart(2,'0')}`,
+      `DESTINO: ${box.dest.toUpperCase()}`,
+      box.cat ? `CATEGORÍA: ${box.cat}` : '',
+      box.notes ? `NOTAS: ${box.notes}` : '',
+      '',
+      'CONTENIDO:',
+      ...box.items.map(i => `- ${i}`)
+    ].filter(Boolean).join('\n');
+
+    new QRCode(container, {
+      text: content,
+      width: 200,
+      height: 200,
+      colorDark: '#1A1410',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    const preview = document.getElementById('qr-items-preview');
+    preview.innerHTML = box.items.length > 0
+      ? `<strong style="font-size:11px;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Contenido</strong><br>${box.items.join(', ')}`
+      : '<em>Sin objetos registrados</em>';
+
+    document.getElementById('qr-modal').style.display = 'flex';
+  }
+
+  // ─── MODAL UTILS ─────────────────────────────────────────
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  function closeModalOnOverlay(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  }
+
+  function updateCatDatalist() {
+    const dl = document.getElementById('cat-list');
+    const cats = [...new Set(boxes.map(b => b.cat).filter(Boolean))];
+    dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
